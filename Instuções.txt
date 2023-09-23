@@ -1,3 +1,4 @@
 1. Clonar repositório no GitHub Desktop através da aba "<> Code"~
 2. Já podem fazer alterações no repositório local através do explorador de ficheiros
-3. Para atualizar o repo online façam commit para o main e depois push (dentro do GitHub Desktop ou fora como preferirem)
+3. Para atualizar o repo online com as vossas cenas façam commit para o main e depois push (dentro do GitHub Desktop ou fora como preferirem)
+4. Para receberem atualizações no repo online façam pull (dentro do GitHub Desktop ou fora como preferirem)
