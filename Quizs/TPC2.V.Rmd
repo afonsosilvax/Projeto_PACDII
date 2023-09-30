@@ -129,13 +129,13 @@ Apesar de haver um erro no conjunto de teste superior ao conjunto de treino não
 Script auxiliar
 ```{r}
 summary(modelo_arvore)
-deviance(modelo_arvore)
+sum((test$Idade.veiculo - pred.rtree.condutores)^2)
 (pred.rtree.condutores[1]-test$Idade.veiculo[1])^2
 
 ```
 
 ```{r}
-#A Árvore de Regressão é constituída por  2 nós folha;  a Residual Deviance associada ao modelo sobre a amostra de teste é 1748724; o erro quadrático de previsão, relativo a Idade.Veiculo, para a primeira observação do conjunto teste é 49.45411. Para reduzir a complexidade do modelo em árvore o valor do argumento mindev da function tree deve ser alterado para 0.01(selecione um dos seguintes valores: 0.01; 0.0001).
+#A Árvore de Regressão é constituída por  2 nós folha;  a Residual Deviance associada ao modelo sobre a amostra de teste é 780187.9; o erro quadrático de previsão, relativo a Idade.Veiculo, para a primeira observação do conjunto teste é 49.45411. Para reduzir a complexidade do modelo em árvore o valor do argumento mindev da function tree deve ser alterado para 0.01 (selecione um dos seguintes valores: 0.01; 0.0001).
 ```
 
 
