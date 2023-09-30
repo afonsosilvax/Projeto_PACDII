@@ -1,0 +1,143 @@
+--- 
+title: "PACDII: QUIZ II"
+author: "grupo 4"
+date: "28 de setembro, 2023"
+output: word_document
+---
+
+# Nota:
+Deve efetuar todos os Save com "Save with encoding UTF-8" de modo a manter palavras acentuadas e caracteres especiais**
+
+## Base de dados:condutores.csv
+
+
+```{r}
+# Remover tudo!
+
+# Incluir as libraries de que necessita
+
+library(caret)
+library(plyr)
+library(ggplot2)
+library(dplyr)
+library(psych)
+library(tree)
+library(VIM)
+library(plyr)
+library(lubridate)
+library(tidyverse)
+library(rpart)
+
+
+
+
+```
+## Questão 1 [5 valores] 
+
+## Leitura dos dados condutores.csv.
+
+```{r}
+condutores <-read.csv("condutores.csv", header=TRUE, stringsAsFactors = T, sep=",",dec=",",check.names=F,na.strings=c("NA","NÃO DEFINIDO"),fileEncoding = "UTF-8")
+
+```
+
+## Remoção dos valores omissos das variáveis Tempo.Condução.Continuada e Ano.matricula
+
+```{r}
+condutores <- condutores[!(is.na(condutores$`Ano matricula`)), ]
+condutores <- condutores[!(is.na(condutores$`Tempo Condução Continuada`)), ]
+condutores
+```
+## Crie variável métrica Idade.Veiculo (2020-Ano.matricula).
+
+## Crie a variável nominal Idade.Condutor com as classes "< 15", "15-17", "18-20", "21-29", "30-39", "40-49", "50-59", "65-69", ">= 70".
+
+## Remova os valores omissos da variável Idade.Condutor
+
+## Usando set.seed(500),efetue a divisão dos dados Data em amostra de treino (70%) e de teste (30%) e apresente uma tabela com a média, desvio padrão, mediana, amplitude, assimetria e curtose da variável Idade.Veiculo em cada amostra.
+
+```{r}
+
+condutores$`Tempo Condução Continuada` -> condutores$TempoContinuada 
+condutores$`Tempo Condução Continuada`<- NULL
+
+condutores$Idade.veiculo<-rep(NA, 37071)
+condutores$Idade.veiculo<- 2020 - condutores$`Ano matricula`
+condutores$Idade.condutor<-rep(NA, 37071)
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(<=5) SUM` >= 1)]<- "< 15"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(6-9) SUM`==1)]<- "< 15"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(10-14) SUM`==1)]<- "< 15"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(15-17) SUM`==1)]<- "15 - 17"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(18-20) SUM`==1)]<- "18-20"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(21-24) SUM`==1)]<- "21-29"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(25-29) SUM`==1)]<- "21-29"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(30-34) SUM`==1)]<- "30-39"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(35-39) SUM`==1)]<- "30-39"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(40-44) SUM`==1)]<- "40-49"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(45-49) SUM`==1)]<- "40-49"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(50-54) SUM`==1)]<- "50-59"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(55-59) SUM`==1)]<- "50-59"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(65-69) SUM`==1)]<- "65-69"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(70-74) SUM`==1)]<- ">=70"
+condutores$Idade.condutor[which(condutores$`Condutor Gr.Etario(>=75) SUM`==1)]<- ">=70"
+condutores <- condutores[!(is.na(condutores$Idade.condutor)), ]
+
+
+set.seed(500)
+index<-sample(1:nrow(condutores),round(nrow(condutores)*0.7))
+train<-condutores[index,] 
+test<-condutores[-index,]
+
+describe(train$Idade.veiculo)[,c(3,4,5,10,11,12)]
+describe(test$Idade.veiculo)[,c(3,4,5,10,11,12)]
+```
+
+
+## Questão 2 [5 valores]
+
+## Obtenha um modelo em árvore, sobre a amostra de treino, sem utilizar poda, considerando as variáveis preditoras Tempo.Condução.Continuada, Idade.Condutor e a parametrização mincut = 5, minsize = 10, mindev = 0.001 e split = "deviance". 
+
+## Estime Idade.Veiculo sobre amostra de teste, a partir da árvore obtida, e apresente as estimativas correspondentes às 10 primeiras observações desta amostra.
+
+
+```{r}
+modelo_arvore <- tree(Idade.veiculo ~ TempoContinuada + Idade.condutor, data = train , mincut = 5, minsize = 10, mindev = 0.001,split = "deviance")
+
+pred.rtree.condutores<-predict(modelo_arvore, test)
+round(pred.rtree.condutores[1:10], 0)
+
+summary(modelo_arvore)
+modelo_arvore
+```
+
+## Questão 3 [5 valores] Apresente os valores das métricas MSE (Mean Squared Error), RMSE (Root Mean Square Squared Error) e MAE (Mean Absolute Error) associados ao modelo aplicado sobre cada uma das amostras (Treino e Teste). Comente se há overfitting.
+
+```{r}
+
+RMSE(obs = test$Idade.veiculo, pred = pred.rtree.condutores)
+MAE(pred.rtree.condutores, test$Idade.veiculo)
+RMSE(obs = test$Idade.veiculo, pred = pred.rtree.condutores)^2
+
+RMSE(obs = train$Idade.veiculo, pred = pred.rtree.condutores)
+MAE(pred.rtree.condutores, train$Idade.veiculo)
+RMSE(obs = train$Idade.veiculo, pred = pred.rtree.condutores)^2
+```
+Apesar de haver um erro no conjunto de teste superior ao conjunto de treino não é considerado overfitting pois não existe muita diferença
+
+## Questão 4 [5 valores] Complete as frases seguintes em comentário do script:
+
+Script auxiliar
+```{r}
+summary(modelo_arvore)
+deviance(modelo_arvore)
+(pred.rtree.condutores[1]-test$Idade.veiculo[1])^2
+
+```
+
+```{r}
+#A Árvore de Regressão é constituída por  2 nós folha;  a Residual Deviance associada ao modelo sobre a amostra de teste é 1748724; o erro quadrático de previsão, relativo a Idade.Veiculo, para a primeira observação do conjunto teste é 49.45411. Para reduzir a complexidade do modelo em árvore o valor do argumento mindev da function tree deve ser alterado para 0.01(selecione um dos seguintes valores: 0.01; 0.0001).
+```
+
+
+## Tarefa final: Submeta, no Moddle, um ficheiro pdf resultado da compilação do TEMPLATE_QUIZ2.
+## Caso os resultados apresentados não sejam coerentes com as respostas dadas, a classificação será penalizada.
