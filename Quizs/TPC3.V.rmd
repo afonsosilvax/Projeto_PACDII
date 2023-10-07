@@ -1,0 +1,74 @@
+---
+title: 'PACDII: Quiz III'
+author: "ID Grupo e nome do representante"
+date: "2023-10-05"
+output: word_document
+---
+
+
+
+```{r}
+# Remover tudo!
+rm(list = ls())
+# Incluir as libraries de que necessita
+library(dplyr)
+#install.packages('fastDummies')
+library(fastDummies)
+library(cluster)
+library(lsr)
+library(ggplot2)
+library(tables)
+
+```
+
+
+# III.1 [5 valores] Leia “peões.csv” e retenha apenas as variáveis “Tipo.Natureza”, “Natureza”, “Ações.Peão” e “Lesões.a.30.dias”. Descarte todos os casos com dados omissos. Adote dummy coding para as variáveis “Tipo.Natureza” e “Lesões.a.30.dias” (mantendo estas variáveis originais no seu conjunto de dados). No Quiz faça upload de um sumário dos dados “peoes_d” assim obtidos.
+
+
+```{r}
+peoes <- read.csv('peões.csv', header = T, stringsAsFactors = T, sep = ',', dec = ',', check.names = T, fileEncoding = "UTF-8")
+
+
+peoes <- peoes %>% select(Tipo.Natureza, Natureza, Acções.Peão, Lesões.a.30.dias)
+
+peoes <- peoes[!(is.na(peoes$Tipo.Natureza)), ]
+peoes <- peoes[!(is.na(peoes$Natureza)), ]
+peoes <- peoes[!(is.na(peoes$Acções.Peão)), ]
+peoes <- peoes[!(is.na(peoes$Lesões.a.30.dias)), ]
+
+summary(peoes)
+
+peoes_d <- dummy_cols(peoes, select_columns = c('Tipo.Natureza', 'Lesões.a.30.dias'), remove_first_dummy = T)
+
+summary(peoes_d)
+```
+
+# III.2) [5 valores] Efectue o agrupamento de “peoes_d” com o algoritmo PAM, usando a distância Manhattan com base nas variáveis dummy (recodificação das categorias de “Tipo.Natureza” e “Lesões.a.30.dias”). Obtenha 4 clusters. No Quiz faça upload de um gráfico de barras ilustrando a sua distribuição (usando a frequência absoluta)
+
+
+```{r}
+manhattan <- daisy(peoes_d[, 5:9], metric = 'manhattan')
+summary(manhattan)
+
+pam_peoes <- pam(manhattan, diss = T, k=4)
+summary(pam_peoes)
+
+clusters <- pam_peoes$clustering
+barplot(table(clusters))
+
+barplot()
+```
+
+# III.3) [5 valores] Caracterize os clusters obtidos usando as variáveis base relevantes. Para o efeito, calcule medidas de associação. No Quiz faça upload de gráficos de barras ilustrando as associações de interesse.
+
+
+```{r}
+
+```
+
+# III.4) [5 valores] Caracterize os clusters obtidos usando as restantes variáveis disponíveis em “peoes_d”. No Quiz faça upload de um resumo dos perfis dos clusters em que também inclui todas as tabelas cruzadas que ilustram as associações entre os clusters obtidos e as variáveis de interesse (sejam ou não variáveis base de agrupamento). 
+
+
+```{r}
+
+```

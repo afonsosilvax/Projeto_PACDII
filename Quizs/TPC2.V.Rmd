@@ -1,7 +1,7 @@
---- 
-title: "PACDII: QUIZ II"
+---
+title: 'PACDII: QUIZ II'
 author: "grupo 4"
-date: "28 de setembro, 2023"
+date: "2023-09-28"
 output: word_document
 ---
 
@@ -10,9 +10,9 @@ Deve efetuar todos os Save com "Save with encoding UTF-8" de modo a manter palav
 
 ## Base de dados:condutores.csv
 
-
 ```{r}
 # Remover tudo!
+rm(list = ls())
 
 # Incluir as libraries de que necessita
 
@@ -27,26 +27,23 @@ library(plyr)
 library(lubridate)
 library(tidyverse)
 library(rpart)
-
-
-
-
 ```
+
 ## Questão 1 [5 valores] 
 
 ## Leitura dos dados condutores.csv.
 
 ```{r}
 condutores <-read.csv("condutores.csv", header=TRUE, stringsAsFactors = T, sep=",",dec=",",check.names=F,na.strings=c("NA","NÃO DEFINIDO"),fileEncoding = "UTF-8")
-
 ```
+
 
 ## Remoção dos valores omissos das variáveis Tempo.Condução.Continuada e Ano.matricula
 
 ```{r}
 condutores <- condutores[!(is.na(condutores$`Ano matricula`)), ]
 condutores <- condutores[!(is.na(condutores$`Tempo Condução Continuada`)), ]
-condutores
+glimpse(condutores)
 ```
 ## Crie variável métrica Idade.Veiculo (2020-Ano.matricula).
 
@@ -126,7 +123,7 @@ Apesar de haver um erro no conjunto de teste superior ao conjunto de treino não
 
 ## Questão 4 [5 valores] Complete as frases seguintes em comentário do script:
 
-Script auxiliar
+Script auxiliar:
 ```{r}
 summary(modelo_arvore)
 sum((test$Idade.veiculo - pred.rtree.condutores)^2)
