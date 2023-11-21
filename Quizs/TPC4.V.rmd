@@ -1,0 +1,106 @@
+---
+title: 'PACDII: Quiz IIVI'
+author: "ID Grupo e nome do representante"
+date: "2023-10-12"
+output: word_document
+---
+
+
+
+```{r}
+# Remover tudo!
+
+# Incluir as libraries de que necessita
+
+library(lubridate)
+library(dbscan)
+library(factoextra)
+library(RColorBrewer)
+library(lsr)
+```
+
+
+# IV.1) [4 valores] Leia “Acidentes.csv” e obtenha um resumo (summary) adequado para todas as variáveis do ficheiro (após corrigir Longitude.GPS e Latitude.GPS (*) e formatar corretamente acidentes$Datahora). No Quiz faça upload – em formato pdf - do referido sumário.
+(*) CONSIDERE QUE:
+Portugal Continental tem latitude mínima de 37N e máxima de 42N 
+Portugal Continental tem longitude mínima 10W (-10) e máxima de 6W (-6)
+
+
+
+```{r}
+df<- read.csv("acidentes.csv")
+df<-subset(df, Latitude.GPS >= 37 & Latitude.GPS <= 42 & Longitude.GPS >= -10 & Longitude.GPS <= -6)
+df$Datahora<- ymd_hms(df$Datahora)
+
+summary(df)
+
+
+```
+
+# IV.2) [3.5 valores] Selecione apenas as variáveis 2 a 14, restrinja o conjunto de dados ao Distrito “Leiria”, “Lisboa”, “Santarém” e “Setúbal”, e, seguidamente, descarte todos os dados omissos.Obtenha uma tabela de frequências absolutas da variável Distrito e, no Quiz, faça  upload – em formato pdf - da mesma tabela.
+
+
+```{r}
+df<-df[,2:14]
+df <- subset(df, Distrito %in% c("Leiria", "Lisboa", "Santarém", "Setúbal"))
+df<- na.omit(df)
+
+contagem<-table(df$Distrito)
+barplot(contagem)
+
+table(df$Distrito)
+```
+
+# IV.3) [6 valores] Efectue o agrupamento dos dados obtidos em IV.2) com o algoritmo DBSCAN, baseado na Latitude.GPS e Longitude.GPS, utilizando eps=0.07 e minPts=40. Apresente um mapa dos clusters obtidos.No Quiz faça upload, em formato pdf, deste mapa.
+
+```{r}
+
+(db<-dbscan(df[,6:7],eps=0.07,minPts = 40))
+
+fviz_cluster(db,df[,6:7],stand = F,
+ellipse = T,
+geom = c("point", "text"),
+labelsize = 6,
+repel = TRUE, 
+palette="Set1",
+ggtheme = theme_light())
+
+```
+
+# IV.4) [6.5 valores] Analise as associações entre as variáveis nominais e métricas disponíveis e os clusters obtidos; use o Distrito para traçar o perfil dos clusters obtendo uma tabela cruzada; determine em que cluster se situam as localidades de Abrantes e Óbidos. Na sequência destas análises complete as frases que se apresentam no Quiz.
+
+```{r}
+Eta<-function(y,x){
+  freqk<-as.vector(table(x))
+  l<-nlevels(x)
+  m<-rep(NA, l)
+  qual<-as.numeric(x)
+  for (k in 1:l) {m[k]<-mean(y[qual == k])}
+  
+  return(sqrt(sum(freqk*(m-mean(y))^2)/sum((y-mean(y))^2)))}
+```
+
+```{r}
+clusters <- db$cluster
+cramersV(df$Entidades.Fiscalizadoras, clusters)
+cramersV(df$Dia.da.Semana, clusters)
+cramersV(df$Características.Tecnicas1, clusters)
+cramersV(df$Cond.Aderência, clusters)
+cramersV(df$Distrito, clusters) # alguma correlação
+cramersV(df$Datahora, clusters) # muita correlação
+
+Eta(df$Velocidade.geral, clusters)
+Eta(df$Velocidade.local, clusters)
+Eta(df$Latitude.GPS, clusters)
+Eta(df$Longitude.GPS, clusters) # alguma correlação
+Eta(df$Num..Feridos.graves.a.30.dias, clusters)
+Eta(df$Num..Feridos.ligeiros.a.30.dias, clusters)
+
+table(df$Distrito, clusters)
+prop.table(table(df$Distrito, clusters), 2)
+```
+As variáveis que mais influenciam os clusters são o "Distrito", a "Datahora" e a "Longitude.GPS".
+
+Ao analisar a tabela de frequências acima, concluimos que Abrantes ficaria no cluster 2 enquanto que Óbidos ficaria no cluster 3.
+
+O cluster 2 e 3 parecem representar acidentes no distríto de Santarém e Leiria respetivamente. O cluster 0 parece ter acidentes mais para fora de Lisboa, enquanto que o 1 parece ter foco em Lisboa e nos distritos do litorais do país (que não é o caso de Santarém porque não se situa perto da costa).

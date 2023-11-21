@@ -56,7 +56,6 @@ summary(pam_peoes)
 clusters <- pam_peoes$clustering
 barplot(table(clusters))
 
-barplot()
 ```
 
 # III.3) [5 valores] Caracterize os clusters obtidos usando as variáveis base relevantes. Para o efeito, calcule medidas de associação. No Quiz faça upload de gráficos de barras ilustrando as associações de interesse.
