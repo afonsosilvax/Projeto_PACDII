@@ -68,6 +68,8 @@ summary(acidentes$sinais)
 data_acidentes <- acidentes %>% select(id_acidente, datahora, dia_da_semana)
 data_acidentes$ano_mes_dia <- format(data_acidentes$datahora, "%Y-%m-%d")
 data_acidentes$mes_dia <- format(data_acidentes$datahora, "%m-%d")
+data_acidentes$mes <- format(data_acidentes$datahora, "%m")
+data_acidentes$dia <- format(data_acidentes$datahora, "%d")
 
 # Dataset de acidentes no Natal (2010-2019)
 natal <- data_acidentes %>% filter(data_acidentes$mes_dia == "12-25")
@@ -88,15 +90,55 @@ ggplot(data_acidentes, aes(x = as.Date(ano_mes_dia))) +
 
 # Número médio de acidentes ao longo de um ano, que reflete em cada dia a média de acidentes de 2010 até 2019 naquele mesmo dia
 nr_acidentes <- data_acidentes %>% group_by(mes_dia) %>% summarise(numero_acidentes=n())
-nr_acidentes$numero_acidentes<-nr_acidentes$numero_acidentes / 10
+nr_acidentes$numero_acidentes <- nr_acidentes$numero_acidentes / 10
 
 ggplot(nr_acidentes, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
-  labs(title = "Evolução do Número de Acidentes ao longo de um ano", x = "Data", y = "Número de Acidentes")
+  labs(title = "Evolução do Número de Acidentes durante um ano", x = "Data", y = "Número de Acidentes")
 
+nr_acidentes_mes <- data_acidentes %>% group_by(mes) %>% summarise(numero_acidentes=n()/10)
 
-to.monthly(problema1$datahora)
-to.monthly(as.xts(problema1$datahora))
+ggplot(nr_acidentes_mes, aes(x = mes, y = numero_acidentes, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes ao longo dos meses", x = "Mês", y = "Número de Acidentes")
 
-as.xts(problema1$datahora)
+mes_geral <- data_acidentes %>% group_by(dia) %>% summarise(numero_acidentes=n()/120)
+mes_geral[31, 2] = mes_geral[31, 2] * 12 / 7
+mes_geral[30, 2] = mes_geral[30, 2] * 12 / 11
+mes_geral[29, 2] = mes_geral[29, 2] * 12 / 11.2
+
+mean(mes_geral$numero_acidentes)
+  
+ggplot(mes_geral, aes(x = dia, y = numero_acidentes, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes ao longo de um mês", x = "Dia", y = "Número de Acidentes")
+
+d = 0
+s = 0
+
+nr_sem <- c(1:52)
+nr_acidentes_sem <- c()
+
+for (i in 1:nrow(nr_acidentes)) {
+  if (d == 7) {
+    nr_acidentes_sem <- c(nr_acidentes_sem, s/7)
+    d = 0
+    s = 0
+  }
+  
+  d = d + 1
+  s = s + nr_acidentes[i, 2]
+}
+
+nr_acidentes_sem <- unlist(nr_acidentes_sem)
+
+acidentes_sem <- data.frame(semana = nr_sem)
+acidentes_sem$numero_acidentes <- nr_acidentes_sem
+
+ggplot(acidentes_sem, aes(x = semana, y = numero_acidentes, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes por semanas", x = "Semana", y = "Número de Acidentes")
