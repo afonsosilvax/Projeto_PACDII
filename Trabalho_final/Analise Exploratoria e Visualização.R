@@ -5,6 +5,8 @@ library(tidyverse)
 library(janitor) # for datacleaning
 library(here)
 library(lubridate)
+library(ggplot2)
+library(xts)
 
 rm(list=ls()) # limpar variáveis
 
@@ -42,6 +44,7 @@ summary(acidentes$datahora)
 acidentes <- acidentes %>% mutate_if(is.character, as.factor)
 summary(acidentes)
 glimpse(acidentes)
+summary(is.na(acidentes))
 
 # Variáveis com alto teor em NA's
 summary(acidentes$pov_proxima)
@@ -67,3 +70,29 @@ ncol(id_duplicado)
 nrow(id_duplicado)
 
 #Tratamento de duplicados
+
+#problema 1
+problema1<-acidentes[,c(1,2,9)]
+
+problema1$dia_mes <- format(problema1$datahora, "%m-%d")
+filtered_df <- problema1[problema1$dia_mes == "12-25", ]
+filtered_df1 <- problema1[problema1$dia_mes == "07-25", ]
+
+ggplot(problema1, aes(x = as.Date(datahora) , group = 1)) +
+  geom_line(stat = "count", color = "skyblue") +
+  labs(title = "Ocorrência de Acidentes ao Longo do Ano", x = "Data", y = "Número de Acidentes")
+
+df<-problema1[,c(1,4)]
+
+nr_acidentes <- problema1 %>% group_by(problema1$dia_mes) %>% summarise(numero_acidentes=n())
+nr_acidentes$numero_acidentes<-nr_acidentes$numero_acidentes / 10
+
+ggplot(nr_acidentes, aes(x =`problema1$dia_mes`, y = numero_acidentes, group = 1)) +
+  geom_line(color = "skyblue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes ao Longo dos Dias", x = "Data", y = "Número de Acidentes")
+
+to.monthly(problema1$datahora)
+to.monthly(as.xts(problema1$datahora))
+
+as.xts(problema1$datahora)
