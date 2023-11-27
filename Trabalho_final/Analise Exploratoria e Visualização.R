@@ -7,7 +7,6 @@ library(janitor)
 library(here)
 library(lubridate)
 library(ggplot2)
-library(xts)
 
 # Limpar variáveis
 rm(list=ls())
@@ -64,22 +63,31 @@ summary(acidentes$sinais)
 
 # Latitude Longitude são relevantes e nao devemos apagar NA? Sentidos podemos apagar NA's'. Características Tecnicas1: ND - caminho/estradas não oficiais
 
+
+# Tratamento de outliers
+
+boxplot(acidentes$num_feridos_ligeiros_a_30_dias, col="#14BFB8", horizontal = TRUE, main="Feridos ligeiros")
+boxplot.stats(acidentes$num_feridos_ligeiros_a_30_dias)$out
+
+boxplot(acidentes$num_feridos_graves_a_30_dias, col="#14BFB8", horizontal = TRUE, main="Feridos graves")
+boxplot.stats(acidentes$num_feridos_graves_a_30_dias)$out
+
+boxplot(acidentes$num_mortos_a_30_dias, col="#14BFB8", horizontal = TRUE, main="Mortos")
+boxplot.stats(acidentes$num_mortos_a_30_dias)$out
+
+# Visualização dos dados
+barplot(prop.table(table(acidentes$entidades_fiscalizadoras)), col="#14BFB8", main="Entidades fiscalizadoras")
+barplot(prop.table(table(acidentes$dia_da_semana)), col="#14BFB8", main="Dia da semana")
+barplot(prop.table(table(acidentes$caracteristicas_tecnicas1)), col="#14BFB8", main="Características técnicas")
+
+hist(table(acidentes$hora), col="#14BFB8", main="Hora")
+
 # Dataset com os acidentes e as respetivas datas
 data_acidentes <- acidentes %>% select(id_acidente, datahora, dia_da_semana)
 data_acidentes$ano_mes_dia <- format(data_acidentes$datahora, "%Y-%m-%d")
 data_acidentes$mes_dia <- format(data_acidentes$datahora, "%m-%d")
 data_acidentes$mes <- format(data_acidentes$datahora, "%m")
 data_acidentes$dia <- format(data_acidentes$datahora, "%d")
-
-# Dataset de acidentes no Natal (2010-2019)
-natal <- data_acidentes %>% filter(data_acidentes$mes_dia == "12-25")
-
-# Dataset de acidentes no dia 23 de Julho (2010-2019)
-dia_normal <- data_acidentes %>% filter(data_acidentes$mes_dia == "07-23")
-
-nrow(natal) > nrow(dia_normal)
-
-# Isto significa que o dia de Natal ao longo destes anos não apresenta um número significativo de acidentes 
 
 # Gráfico de acidentes desde 2010 até 2019
 ggplot(data_acidentes, aes(x = as.Date(ano_mes_dia))) +
@@ -142,3 +150,35 @@ ggplot(acidentes_sem, aes(x = semana, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
   labs(title = "Evolução do Número de Acidentes por semanas", x = "Semana", y = "Número de Acidentes")
+
+# Acidentes 5 dias antes do Natal e 2 dias depois
+acidentes_natal <- nr_acidentes %>% filter(mes_dia == "12-10" | mes_dia == "12-11" | mes_dia == "12-12" | mes_dia == "12-13" | mes_dia == "12-14" | mes_dia == "12-15" | mes_dia == "12-16" | mes_dia == "12-17" | mes_dia == "12-18" | mes_dia == "12-19" | mes_dia == "12-20" | mes_dia == "12-21" | mes_dia == "12-22" | mes_dia == "12-23" | mes_dia == "12-24" | mes_dia == "12-25" | mes_dia == "12-26" | mes_dia == "12-27")
+
+ggplot(acidentes_natal, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes em periodo natalício", x = "Dia", y = "Número de Acidentes")
+
+# Acidentes em dezembro
+acidentes_dez <- nr_acidentes %>% filter(grepl("12-", mes_dia))
+
+ggplot(acidentes_dez, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes em dezembro", x = "Dia", y = "Número de Acidentes")
+
+# Acidentes no carnaval
+acidentes_carnaval <- nr_acidentes %>% filter(mes_dia == "02-16" | mes_dia == "02-17" | mes_dia == "02-18" | mes_dia == "02-19" | mes_dia == "02-20" | mes_dia == "02-21" | mes_dia == "02-22" | mes_dia == "02-23")
+
+ggplot(acidentes_carnaval, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes no periodo de carnaval", x = "Dia", y = "Número de Acidentes")
+
+# Acidentes em fevereiro
+acidentes_fev <- nr_acidentes %>% filter(grepl("02-", mes_dia))
+
+ggplot(acidentes_fev, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes em fevereiro", x = "Dia", y = "Número de Acidentes")
