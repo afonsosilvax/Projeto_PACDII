@@ -7,6 +7,7 @@ library(janitor)
 library(here)
 library(lubridate)
 library(ggplot2)
+library(mice)
 
 # Ler ficheiros
 acidentes_2010 <- read_excel("acidentes-2010.xlsx", sheet = 3, col_names = TRUE, na = "NÃO DEFINIDO"
@@ -188,3 +189,29 @@ ggplot(acidentes_fev, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
   labs(title = "Evolução do Número de Acidentes em fevereiro", x = "Dia", y = "Número de Acidentes")
+
+# resolução problema 2
+hist(acidentes$num_feridos_ligeiros_a_30_dias)
+hist(acidentes$num_feridos_graves_a_30_dias)
+hist(acidentes$num_mortos_a_30_dias)
+
+# acidentes where num_mortos_a_30_dias > 0 or num_feridos_graves_a_30_dias > 2
+prob2 <- acidentes %>% filter(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 2 | num_feridos_ligeiros_a_30_dias > 4)
+summary(is.na(prob2))
+
+# substiture every na in obras_arte by "estrada"
+prob2$obras_arte <- as.character(prob2$obras_arte)
+prob2$obras_arte[is.na(prob2$obras_arte)] <- "estrada"
+prob2$obras_arte <- as.factor(prob2$obras_arte)
+
+# tratar sinais
+prob2$sinais <- as.character(prob2$sinais)
+prob2$sinais[is.na(prob2$sinais)] <- "Sem sinal"
+prob2$sinais <- as.factor(prob2$sinais)
+
+# eliminate colunms latitude and longitude, pov_proxima, nome_arruameto, km, sentidos
+prob2_tratado <- prob2 %>% select(-latitude_gps, -longitude_gps, -pov_proxima, -nome_arruamento, -km, -sentidos)
+
+summary(is.na(prob2_tratado))
+
+prob2_input <- complete(mice(prob2_tratado))
