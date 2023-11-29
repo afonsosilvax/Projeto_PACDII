@@ -8,9 +8,6 @@ library(here)
 library(lubridate)
 library(ggplot2)
 
-# Limpar variáveis
-rm(list=ls())
-
 # Ler ficheiros
 acidentes_2010 <- read_excel("acidentes-2010.xlsx", sheet = 3, col_names = TRUE, na = "NÃO DEFINIDO"
                              , .name_repair = make_clean_names)
@@ -85,7 +82,7 @@ hist(table(acidentes$hora), col="#14BFB8", main="Hora")
 # Dataset com os acidentes e as respetivas datas
 data_acidentes <- acidentes %>% select(id_acidente, datahora, dia_da_semana)
 data_acidentes$ano_mes_dia <- format(data_acidentes$datahora, "%Y-%m-%d")
-data_acidentes$mes_dia <- format(data_acidentes$datahora, "%m-%d")
+data_acidentes$ano <- format(data_acidentes$datahora, "%Y")
 data_acidentes$mes <- format(data_acidentes$datahora, "%m")
 data_acidentes$dia <- format(data_acidentes$datahora, "%d")
 
@@ -97,7 +94,9 @@ ggplot(data_acidentes, aes(x = as.Date(ano_mes_dia))) +
                limits = c(as.Date("2010-01-01"), as.Date("2019-12-31")))
 
 # Número médio de acidentes ao longo de um ano, que reflete em cada dia a média de acidentes de 2010 até 2019 naquele mesmo dia
-nr_acidentes <- data_acidentes %>% group_by(mes_dia) %>% summarise(numero_acidentes=n())
+nr_acidentes <- data_acidentes %>% select(mes_dia = datahora, mes, dia)
+nr_acidentes$mes_dia <- format(nr_acidentes$mes_dia, "%m-%d")
+nr_acidentes <- nr_acidentes %>% group_by(mes_dia) %>% summarise(numero_acidentes=n())
 nr_acidentes$numero_acidentes <- nr_acidentes$numero_acidentes / 10
 
 ggplot(nr_acidentes, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
@@ -106,11 +105,18 @@ ggplot(nr_acidentes, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   labs(title = "Evolução do Número de Acidentes durante um ano", x = "Data", y = "Número de Acidentes")
 
 nr_acidentes_mes <- data_acidentes %>% group_by(mes) %>% summarise(numero_acidentes=n()/10)
+nr_acidentes_mes <- nr_acidentes_mes %>% rows_update(nr_acidentes_mes %>% filter(mes %in% c("01", "03", "05", "07", "08", "10", "12")) %>% 
+                                   mutate(numero_acidentes = numero_acidentes/31))
+nr_acidentes_mes <- nr_acidentes_mes %>% rows_update(nr_acidentes_mes %>% filter(mes %in% c("04", "06", "09", "11")) %>% 
+                                                       mutate(numero_acidentes = numero_acidentes/30))
+nr_acidentes_mes <- nr_acidentes_mes %>% rows_update(nr_acidentes_mes %>% filter(mes == "02") %>% 
+                                                       mutate(numero_acidentes = numero_acidentes/28.2))
 
+  
 ggplot(nr_acidentes_mes, aes(x = mes, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
-  labs(title = "Evolução do Número de Acidentes ao longo dos meses", x = "Mês", y = "Número de Acidentes")
+  labs(title = "Evolução do Número de Acidentes médio ao longo dos meses", x = "Mês", y = "Número de Acidentes")
 
 mes_geral <- data_acidentes %>% group_by(dia) %>% summarise(numero_acidentes=n()/120)
 mes_geral[31, 2] = mes_geral[31, 2] * 12 / 7
