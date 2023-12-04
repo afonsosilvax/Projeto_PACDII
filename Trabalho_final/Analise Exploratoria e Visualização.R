@@ -7,7 +7,7 @@ library(janitor)
 library(here)
 library(lubridate)
 library(ggplot2)
-library(mice)
+
 
 # Ler ficheiros
 acidentes_2010 <- read_excel("acidentes-2010.xlsx", sheet = 3, col_names = TRUE, na = "NÃO DEFINIDO"
@@ -50,6 +50,7 @@ glimpse(acidentes)
 
 # Estudo dos NA's
 summary(is.na(acidentes))
+summary(acidentes$sentidos)
 
 # Variáveis com alto teor em NA's
 summary(acidentes$pov_proxima)
@@ -59,6 +60,50 @@ summary(acidentes$sentidos)
 summary(acidentes$obras_arte) # túneis, pontes e estradas - substituir NA's por estradas
 summary(acidentes$sinais)
 
+#eliminação de na's de acordo com a nossa interpretação do manual de preenchimento
+acidentes <- acidentes[-which(is.na(acidentes$velocidade_local)),]
+acidentes <- acidentes[-which(is.na(acidentes$velocidade_geral)),]
+acidentes <- acidentes[-which(is.na(acidentes$caracteristicas_tecnicas1)),]
+acidentes <- acidentes[-which(is.na(acidentes$cond_aderencia)),]
+acidentes$pov_proxima <- as.character(acidentes$pov_proxima)
+acidentes$pov_proxima[is.na(acidentes$pov_proxima)] <- "Fora das localidades"
+acidentes$pov_proxima <- as.factor(acidentes$pov_proxima)
+acidentes$nome_arruamento <- as.character(acidentes$nome_arruamento)
+acidentes$nome_arruamento[is.na(acidentes$nome_arruamento)] <- "Via fora de localidade"
+acidentes$nome_arruamento <- as.factor(acidentes$nome_arruamento)
+acidentes <- acidentes[-which(is.na(acidentes$estado_conservacao)),]
+acidentes$km <- as.character(acidentes$km)
+acidentes$km[is.na(acidentes$km)] <- "Não aplicável"
+acidentes$km <- as.factor(acidentes$km)
+acidentes$factores_atmosfericos <- as.character(acidentes$factores_atmosfericos)
+acidentes$factores_atmosfericos[is.na(acidentes$factores_atmosfericos)] <- "Outro"
+acidentes$factores_atmosfericos <- as.factor(acidentes$factores_atmosfericos)
+acidentes <- acidentes[-which(is.na(acidentes$reg_circulacao1)),]
+acidentes <- acidentes[-which(is.na(acidentes$interseccao_vias)),]
+acidentes <- acidentes[-which(is.na(acidentes$luminosidade)),]
+acidentes <- acidentes[-which(is.na(acidentes$marca_via)),]
+acidentes$obras_arte <- as.character(acidentes$obras_arte)
+acidentes$obras_arte[is.na(acidentes$obras_arte)] <- "Estrada/Outro"
+acidentes$obras_arte <- as.factor(acidentes$obras_arte)
+acidentes <- acidentes[-which(is.na(acidentes$obstaculos)),]
+acidentes$sinais <- as.character(acidentes$sinais)
+acidentes$sinais[is.na(acidentes$sinais)] <- "Sem sinalização"
+acidentes$sinais <- as.factor(acidentes$sinais)
+#perguntar ao stor
+acidentes$sinais_luminosos <- as.character(acidentes$sinais_luminosos)
+acidentes$sinais_luminosos[is.na(acidentes$sinais_luminosos)] <- "Outros"
+acidentes$sinais_luminosos <- as.factor(acidentes$sinais_luminosos)
+acidentes$sentidos <- as.character(acidentes$sentidos)
+acidentes$sentidos[is.na(acidentes$sentidos)] <- "Estrada sem separador central"
+acidentes$sentidos <- as.factor(acidentes$sentidos)
+acidentes <- acidentes[-which(is.na(acidentes$tipo_piso)),]
+acidentes <- acidentes[-which(is.na(acidentes$tracado_1)),]
+acidentes <- acidentes[-which(is.na(acidentes$tracado_2)),]
+acidentes <- acidentes[-which(is.na(acidentes$tracado_3)),]
+acidentes <- acidentes[-which(is.na(acidentes$tracado_4)),]
+acidentes <- acidentes[-which(is.na(acidentes$via_transito)),]
+acidentes <- acidentes %>% select(-latitude_gps, -longitude_gps)
+summary(is.na(acidentes))
 # Latitude Longitude são relevantes e nao devemos apagar NA? Sentidos podemos apagar NA's'. Características Tecnicas1: ND - caminho/estradas não oficiais
 
 
@@ -197,21 +242,3 @@ hist(acidentes$num_mortos_a_30_dias)
 
 # acidentes where num_mortos_a_30_dias > 0 or num_feridos_graves_a_30_dias > 2
 prob2 <- acidentes %>% filter(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 2 | num_feridos_ligeiros_a_30_dias > 4)
-summary(is.na(prob2))
-
-# substiture every na in obras_arte by "estrada"
-prob2$obras_arte <- as.character(prob2$obras_arte)
-prob2$obras_arte[is.na(prob2$obras_arte)] <- "estrada"
-prob2$obras_arte <- as.factor(prob2$obras_arte)
-
-# tratar sinais
-prob2$sinais <- as.character(prob2$sinais)
-prob2$sinais[is.na(prob2$sinais)] <- "Sem sinal"
-prob2$sinais <- as.factor(prob2$sinais)
-
-# eliminate colunms latitude and longitude, pov_proxima, nome_arruameto, km, sentidos
-prob2_tratado <- prob2 %>% select(-latitude_gps, -longitude_gps, -pov_proxima, -nome_arruamento, -km, -sentidos)
-
-summary(is.na(prob2_tratado))
-
-prob2_input <- complete(mice(prob2_tratado))
