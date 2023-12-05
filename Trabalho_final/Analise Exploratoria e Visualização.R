@@ -7,12 +7,6 @@ library(janitor)
 library(here)
 library(lubridate)
 library(ggplot2)
-library(cluster)
-library(lsr) 
-library(ggplot2)
-library(tables)
-library(dbscan)
-
 
 
 # Ler ficheiros
@@ -158,13 +152,13 @@ ggplot(nr_acidentes, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
 
 nr_acidentes_mes <- data_acidentes %>% group_by(mes) %>% summarise(numero_acidentes=n()/10)
 nr_acidentes_mes <- nr_acidentes_mes %>% rows_update(nr_acidentes_mes %>% filter(mes %in% c("01", "03", "05", "07", "08", "10", "12")) %>% 
-                                   mutate(numero_acidentes = numero_acidentes/31))
+                                                       mutate(numero_acidentes = numero_acidentes/31))
 nr_acidentes_mes <- nr_acidentes_mes %>% rows_update(nr_acidentes_mes %>% filter(mes %in% c("04", "06", "09", "11")) %>% 
                                                        mutate(numero_acidentes = numero_acidentes/30))
 nr_acidentes_mes <- nr_acidentes_mes %>% rows_update(nr_acidentes_mes %>% filter(mes == "02") %>% 
                                                        mutate(numero_acidentes = numero_acidentes/28.2))
 
-  
+
 ggplot(nr_acidentes_mes, aes(x = mes, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
@@ -176,7 +170,7 @@ mes_geral[30, 2] = mes_geral[30, 2] * 12 / 11
 mes_geral[29, 2] = mes_geral[29, 2] * 12 / 11.2
 
 mean(mes_geral$numero_acidentes)
-  
+
 ggplot(mes_geral, aes(x = dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
@@ -226,7 +220,37 @@ ggplot(acidentes_dez, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   labs(title = "Evolução do Número de Acidentes em dezembro", x = "Dia", y = "Número de Acidentes")
 
 # Acidentes no carnaval
-acidentes_carnaval <- nr_acidentes %>% filter(mes_dia == "02-16" | mes_dia == "02-17" | mes_dia == "02-18" | mes_dia == "02-19" | mes_dia == "02-20" | mes_dia == "02-21" | mes_dia == "02-22" | mes_dia == "02-23")
+dia_carnaval <- c(as_date("2010-02-16"), as_date("2011-03-08"), as_date("2012-02-21"), 
+                  as_date("2013-02-12"), as_date("2014-03-04"), as_date("2015-02-17"), 
+                  as_date("2016-02-09"), as_date("2017-02-28"), as_date("2018-02-13"),
+                  as_date("2019-03-05"))
+
+antes_c <- c(as_date(dia_carnaval[1] - 5))
+depois_c <- c(as_date(dia_carnaval[1] + 3))
+
+for (i in 2:10) {
+  antes_c <- c(antes_c, as_date(dia_carnaval[i] - 5))
+  depois_c <- c(depois_c, as_date(dia_carnaval[i] + 3))
+}
+
+acidentes_carnaval <- data_acidentes %>% filter(between(as_date(ano_mes_dia), antes_c[1], depois_c[1]) | 
+                                                  between(as_date(ano_mes_dia), antes_c[2], depois_c[2]) | 
+                                                  between(as_date(ano_mes_dia), antes_c[3], depois_c[3]) | 
+                                                  between(as_date(ano_mes_dia), antes_c[4], depois_c[4]) | 
+                                                  between(as_date(ano_mes_dia), antes_c[5], depois_c[5]) | 
+                                                  between(as_date(ano_mes_dia), antes_c[6], depois_c[6]) | 
+                                                  between(as_date(ano_mes_dia), antes_c[7], depois_c[7]) | 
+                                                  between(as_date(ano_mes_dia), antes_c[8], depois_c[8]) | 
+                                                  between(as_date(ano_mes_dia), antes_c[9], depois_c[9]) | 
+                                                  between(as_date(ano_mes_dia), antes_c[10], depois_c[10])) %>% 
+  group_by(ano_mes_dia) %>% summarise(numero_acidentes=n())
+
+ggplot(acidentes_carnaval, aes(x = ano_mes_dia, y = numero_acidentes, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes em vários periodos de carnaval 2010-2019", x = "Dia", y = "Número de Acidentes")
+
+
 
 ggplot(acidentes_carnaval, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
@@ -246,8 +270,11 @@ hist(acidentes$num_feridos_ligeiros_a_30_dias)
 hist(acidentes$num_feridos_graves_a_30_dias)
 hist(acidentes$num_mortos_a_30_dias)
 
+# acidentes where num_mortos_a_30_dias > 0 or num_feridos_graves_a_30_dias > 2
+prob2 <- acidentes %>% filter(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 2 | num_feridos_ligeiros_a_30_dias > 4)
+
 prob2 <- acidentes %>% 
-mutate(grave = ifelse(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 0, "yes", "no")) %>% select(-num_mortos_a_30_dias, -num_feridos_graves_a_30_dias, -num_feridos_ligeiros_a_30_dias)
+  mutate(grave = ifelse(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 0, "yes", "no")) %>% select(-num_mortos_a_30_dias, -num_feridos_graves_a_30_dias, -num_feridos_ligeiros_a_30_dias)
 
 prob2$grave <- as.factor(prob2$grave)
 
@@ -263,4 +290,3 @@ prop.table(table(conjunto_teste$grave))
 # algoritmo regressão logistica de forma naive
 
 modelo_logistico <- glm(grave ~ , data = conjunto_treino, family = "binomial")
-
