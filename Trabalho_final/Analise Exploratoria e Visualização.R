@@ -7,6 +7,12 @@ library(janitor)
 library(here)
 library(lubridate)
 library(ggplot2)
+library(cluster)
+library(lsr) 
+library(ggplot2)
+library(tables)
+library(dbscan)
+
 
 
 # Ler ficheiros
@@ -240,5 +246,21 @@ hist(acidentes$num_feridos_ligeiros_a_30_dias)
 hist(acidentes$num_feridos_graves_a_30_dias)
 hist(acidentes$num_mortos_a_30_dias)
 
-# acidentes where num_mortos_a_30_dias > 0 or num_feridos_graves_a_30_dias > 2
-prob2 <- acidentes %>% filter(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 2 | num_feridos_ligeiros_a_30_dias > 4)
+prob2 <- acidentes %>% 
+mutate(grave = ifelse(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 0, "yes", "no")) %>% select(-num_mortos_a_30_dias, -num_feridos_graves_a_30_dias, -num_feridos_ligeiros_a_30_dias)
+
+prob2$grave <- as.factor(prob2$grave)
+
+prop.table(table(prob2$grave))
+
+conjunto_indices <- sample(1:nrow(prob2), size = 0.7 * nrow(prob2))
+
+conjunto_treino <- prob2[conjunto_indices, ]
+conjunto_teste <- prob2[-conjunto_indices, ]
+
+prop.table(table(conjunto_treino$grave))
+prop.table(table(conjunto_teste$grave))
+# algoritmo regressão logistica de forma naive
+
+modelo_logistico <- glm(grave ~ , data = conjunto_treino, family = "binomial")
+
