@@ -7,6 +7,7 @@ library(janitor)
 library(here)
 library(lubridate)
 library(ggplot2)
+library(lsr)
 
 
 # Ler ficheiros
@@ -36,8 +37,10 @@ acidentes <- rbind(acidentes_2010, acidentes_2011, acidentes_2012, acidentes_201
                    acidentes_2014, acidentes_2015, acidentes_2016, acidentes_2017, 
                    acidentes_2018, acidentes_2019)
 
+
 # Tratamento da coluna datahora
 acidentes$datahora <- as_datetime(acidentes$datahora)
+
 class(acidentes$datahora)
 summary(acidentes$datahora)
 
@@ -107,7 +110,7 @@ summary(is.na(acidentes))
 # Latitude Longitude são relevantes e nao devemos apagar NA? Sentidos podemos apagar NA's'. Características Tecnicas1: ND - caminho/estradas não oficiais
 
 
-# Tratamento de outliers
+# visionamento de outliers
 
 boxplot(acidentes$num_feridos_ligeiros_a_30_dias, col="#14BFB8", horizontal = TRUE, main="Feridos ligeiros")
 boxplot.stats(acidentes$num_feridos_ligeiros_a_30_dias)$out
@@ -275,18 +278,59 @@ prob2 <- acidentes %>% filter(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30
 
 prob2 <- acidentes %>% 
   mutate(grave = ifelse(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 0, "yes", "no")) %>% select(-num_mortos_a_30_dias, -num_feridos_graves_a_30_dias, -num_feridos_ligeiros_a_30_dias)
+#vamos fazer uma amostra dos dados para poder fazer algoritmos com o mesmo
 
-prob2$grave <- as.factor(prob2$grave)
+prob2v<-amostra <- prob2[sample(nrow(prob2), floor(nrow(prob2)/2)), ]
 
-prop.table(table(prob2$grave))
+prob2v$grave <- as.factor(prob2v$grave)
 
-conjunto_indices <- sample(1:nrow(prob2), size = 0.7 * nrow(prob2))
+prop.table(table(prob2v$grave))
 
-conjunto_treino <- prob2[conjunto_indices, ]
-conjunto_teste <- prob2[-conjunto_indices, ]
+conjunto_indices <- sample(1:nrow(prob2v), size = 0.7 * nrow(prob2v))
+
+conjunto_treino <- prob2v[conjunto_indices, ]
+conjunto_teste <- prob2v[-conjunto_indices, ]
 
 prop.table(table(conjunto_treino$grave))
 prop.table(table(conjunto_teste$grave))
+
+#Analise de correlações
+cramersV(conjunto_treino$grave, conjunto_treino$distrito)
+cramersV(conjunto_treino$grave, conjunto_treino$entidades_fiscalizadoras)
+cramersV(conjunto_treino$grave, conjunto_treino$velocidade_geral)
+cramersV(conjunto_treino$grave, conjunto_treino$dia_da_semana)
+cramersV(conjunto_treino$grave, conjunto_treino$caracteristicas_tecnicas1)
+cramersV(conjunto_treino$grave, conjunto_treino$cond_aderencia)
+cramersV(conjunto_treino$grave, conjunto_treino$concelho)
+cramersV(conjunto_treino$grave, conjunto_treino$freguesia)
+cramersV(conjunto_treino$grave, conjunto_treino$pov_proxima)
+cramersV(conjunto_treino$grave, conjunto_treino$nome_arruamento)
+cramersV(conjunto_treino$grave, conjunto_treino$tipos_vias)
+cramersV(conjunto_treino$grave, conjunto_treino$cod_via)
+cramersV(conjunto_treino$grave, conjunto_treino$estado_conservacao)
+cramersV(conjunto_treino$grave, conjunto_treino$km)
+cramersV(conjunto_treino$grave, conjunto_treino$factores_atmosfericos)
+cramersV(conjunto_treino$grave, conjunto_treino$reg_circulacao1)
+cramersV(conjunto_treino$grave, conjunto_treino$interseccao_vias)
+cramersV(conjunto_treino$grave, conjunto_treino$localizacoes)
+cramersV(conjunto_treino$grave, conjunto_treino$luminosidade)
+cramersV(conjunto_treino$grave, conjunto_treino$marca_via)
+cramersV(conjunto_treino$grave, conjunto_treino$natureza)
+cramersV(conjunto_treino$grave, conjunto_treino$obras_arte)
+cramersV(conjunto_treino$grave, conjunto_treino$obstaculos)
+cramersV(conjunto_treino$grave, conjunto_treino$sentidos)
+cramersV(conjunto_treino$grave, conjunto_treino$sinais)
+cramersV(conjunto_treino$grave, conjunto_treino$tipo_piso)
+cramersV(conjunto_treino$grave, conjunto_treino$tracado_1)
+cramersV(conjunto_treino$grave, conjunto_treino$tracado_2)
+cramersV(conjunto_treino$grave, conjunto_treino$tracado_3)
+cramersV(conjunto_treino$grave, conjunto_treino$tracado_4)
+cramersV(conjunto_treino$grave, conjunto_treino$via_transito)
+cramersV(conjunto_treino$grave, conjunto_treino$velocidade_local)
+
+
+#analisar correlações entre variaveis de alta correlação, natureza, km, codvia, nome arruamento, pov_proxima, freguesia,, concelho, distrito, velocidade geral, velocidade local
+#dentro das variaveis de alta correlação que dizem respeito a localização escolhemos a com maior correlação pois elas sao correlacionadas entre si o mesmo para as velociades
 # algoritmo regressão logistica de forma naive
 
-modelo_logistico <- glm(grave ~ , data = conjunto_treino, family = "binomial")
+modelo_logistico <- glm(grave ~ natureza+km+cod_via+nome_arruamento, data = conjunto_teste, family = "binomial")
