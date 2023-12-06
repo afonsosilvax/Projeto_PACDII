@@ -1,14 +1,15 @@
 #install.packages("janitor")
+#install.packages("caret")
 
 library(dplyr)
 library(readxl)
-library(tidyverse)
 library(janitor)
 library(here)
 library(lubridate)
 library(ggplot2)
 library(lsr)
-
+library(tidyverse)
+library(caret)
 
 # Ler ficheiros
 acidentes_2010 <- read_excel("acidentes-2010.xlsx", sheet = 3, col_names = TRUE, na = "NÃO DEFINIDO"
@@ -281,19 +282,19 @@ hist(acidentes$num_mortos_a_30_dias)
 # acidentes where num_mortos_a_30_dias > 0 or num_feridos_graves_a_30_dias > 2
 
 prob2 <- acidentes %>% 
-  mutate(grave = ifelse(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 0, "yes", "no")) %>% select(-num_mortos_a_30_dias, -num_feridos_graves_a_30_dias, -num_feridos_ligeiros_a_30_dias)
+  mutate(grave = ifelse(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 0, 1, 0)) %>% select(-num_mortos_a_30_dias, -num_feridos_graves_a_30_dias, -num_feridos_ligeiros_a_30_dias)
 #vamos fazer uma amostra dos dados para poder fazer algoritmos com o mesmo
 
-prob2v<-amostra <- prob2[sample(nrow(prob2), floor(nrow(prob2)/2)), ]
+prob2s <- createDataPartition(prob2$grave, p = 0.02, list = FALSE)
+amostra <- prob2[prob2s, ]
 
-prob2v$grave <- as.factor(prob2v$grave)
+amostra$grave <- as.factor(amostra$grave)
 
-prop.table(table(prob2v$grave))
+prop.table(table(amostra$grave))
 
-conjunto_indices <- sample(1:nrow(prob2v), size = 0.7 * nrow(prob2v))
-
-conjunto_treino <- prob2v[conjunto_indices, ]
-conjunto_teste <- prob2v[-conjunto_indices, ]
+conjunto_indices <- sample(1:nrow(amostra), size = 0.7 * nrow(amostra))
+conjunto_treino <- amostra[conjunto_indices, ]
+conjunto_teste <- amostra[-conjunto_indices, ]
 
 prop.table(table(conjunto_treino$grave))
 prop.table(table(conjunto_teste$grave))
@@ -337,8 +338,12 @@ cramersV(conjunto_treino$grave, conjunto_treino$velocidade_local)
 #dentro das variaveis de alta correlação que dizem respeito a localização escolhemos a com maior correlação pois elas sao correlacionadas entre si o mesmo para as velociades
 # algoritmo regressão logistica de forma naive
 
-<<<<<<< HEAD
-modelo_logistico <- glm(grave ~ natureza+km+cod_via+nome_arruamento, data = conjunto_teste, family = "binomial")
-=======
-modelo_logistico <- glm(grave ~ ., data = conjunto_treino, family = "binomial")
->>>>>>> 429b289350da809ec6a2d8563c817be62b0fe37e
+modelo_logistico <- glm(grave ~ natureza, data = conjunto_treino, family = "binomial")
+summary(modelo_logistico)
+
+#predict with test data
+previsao <- predict(modelo_logistico, newdata = conjunto_teste, type = "response")
+previsao <- ifelse(previsao > 0.5, 1, 0)
+
+#accuracy of the prediction
+mean(previsao == conjunto_teste$grave)
