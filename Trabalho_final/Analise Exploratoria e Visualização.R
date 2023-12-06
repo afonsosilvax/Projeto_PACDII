@@ -55,6 +55,8 @@ glimpse(acidentes)
 summary(is.na(acidentes))
 summary(acidentes$sentidos)
 
+sum(is.na(acidentes))/(nrow(acidentes)*ncol(acidentes))
+                       
 # Variáveis com alto teor em NA's
 summary(acidentes$pov_proxima)
 summary(acidentes$nome_arruamento)
@@ -253,9 +255,12 @@ ggplot(acidentes_carnaval, aes(x = ano_mes_dia, y = numero_acidentes, group = 1)
   geom_point(color = "red") +
   labs(title = "Evolução do Número de Acidentes em vários periodos de carnaval 2010-2019", x = "Dia", y = "Número de Acidentes")
 
+acidentes_carnaval <- acidentes_carnaval %>%
+  mutate(posicao = rep(1:9, length.out = n())) %>%
+  group_by(posicao) %>% summarise(numero_acidentes = sum(numero_acidentes)/10)
+  
 
-
-ggplot(acidentes_carnaval, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
+ggplot(acidentes_carnaval, aes(x = posicao, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
   labs(title = "Evolução do Número de Acidentes no periodo de carnaval", x = "Dia", y = "Número de Acidentes")
@@ -274,7 +279,6 @@ hist(acidentes$num_feridos_graves_a_30_dias)
 hist(acidentes$num_mortos_a_30_dias)
 
 # acidentes where num_mortos_a_30_dias > 0 or num_feridos_graves_a_30_dias > 2
-prob2 <- acidentes %>% filter(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 2 | num_feridos_ligeiros_a_30_dias > 4)
 
 prob2 <- acidentes %>% 
   mutate(grave = ifelse(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 0, "yes", "no")) %>% select(-num_mortos_a_30_dias, -num_feridos_graves_a_30_dias, -num_feridos_ligeiros_a_30_dias)
@@ -333,4 +337,8 @@ cramersV(conjunto_treino$grave, conjunto_treino$velocidade_local)
 #dentro das variaveis de alta correlação que dizem respeito a localização escolhemos a com maior correlação pois elas sao correlacionadas entre si o mesmo para as velociades
 # algoritmo regressão logistica de forma naive
 
+<<<<<<< HEAD
 modelo_logistico <- glm(grave ~ natureza+km+cod_via+nome_arruamento, data = conjunto_teste, family = "binomial")
+=======
+modelo_logistico <- glm(grave ~ ., data = conjunto_treino, family = "binomial")
+>>>>>>> 429b289350da809ec6a2d8563c817be62b0fe37e
