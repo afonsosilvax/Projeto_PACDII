@@ -96,6 +96,7 @@ acidentes <- acidentes %>% select(-latitude_gps, -longitude_gps)
 # Passar para factor as variáveis que são character
 acidentes <- acidentes %>% mutate_if(is.character, as.factor)
 summary(is.na(acidentes))
+glimpse(acidentes)
 
 # Visualização de outliers
 boxplot(acidentes$num_feridos_ligeiros_a_30_dias, col="#14BFB8", horizontal = TRUE, main="Feridos ligeiros")
@@ -265,16 +266,24 @@ hist(acidentes$num_mortos_a_30_dias)
 # acidentes where num_mortos_a_30_dias > 0 or num_feridos_graves_a_30_dias > 2
 
 prob2 <- acidentes %>% 
-  mutate(grave = ifelse(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 0, 1, 0)) %>% select(-num_mortos_a_30_dias, -num_feridos_graves_a_30_dias, -num_feridos_ligeiros_a_30_dias)
+  mutate(grave = ifelse(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 0, 1, 0)) %>% 
+  select(-num_mortos_a_30_dias, -num_feridos_graves_a_30_dias, -num_feridos_ligeiros_a_30_dias)
+
+prob2 <- prob2 %>%
+  mutate(natureza = factor(ifelse(natureza=="Atropelamento com fuga" | natureza=="Atropelamento de animais" | natureza=="Atropelamento de peões", "Atropelamento", 
+                                  ifelse(natureza=="Colisão choque em cadeia" | natureza=="Colisão com fuga" | natureza=="Colisão com outras situações" | natureza=="Colisão com veiculo ou obstáculo na faixa de rodagem" | natureza=="Colisão frontal" | natureza=="Colisão lateral com outro veículo em movimento" | natureza=="Colisão traseira com outro veículo em movimento", "Colisão", "Despiste"))))
 
 # Vamos fazer uma amostra dos dados para poder fazer algoritmos com o mesmo
+set.seed(2023)
 prob2s <- createDataPartition(prob2$grave, p = 0.01, list = FALSE)
 amostra <- prob2[prob2s, ]
 
 amostra$grave <- as.factor(amostra$grave)
 
 prop.table(table(amostra$grave))
+xtabs(~grave + natureza, data = amostra)
 
+set.seed(2023)
 conjunto_indices <- sample(1:nrow(amostra), size = 0.7 * nrow(amostra))
 conjunto_treino <- amostra[conjunto_indices, ]
 conjunto_teste <- amostra[-conjunto_indices, ]
@@ -326,7 +335,7 @@ length(levels(amostra$km))
 #dentro das variaveis de alta correlação que dizem respeito a localização escolhemos a com maior correlação pois elas sao correlacionadas entre si o mesmo para as velociades
 # algoritmo regressão logistica de forma naive
 
-modelo_logistico <- glm(grave ~ distrito + natureza, data = conjunto_treino, family = "binomial")
+modelo_logistico <- glm(grave ~ distrito + natureza + cond_aderencia, data = conjunto_treino, family = "binomial")
 summary(modelo_logistico)
 
 
@@ -339,8 +348,8 @@ length(coef(modelo_logistico))
 
 #accuracy of the prediction
 mean(previsao == conjunto_teste$grave)
-
-
+#0.9172043
+#0.9290323 - 3 niveis na natureza
 
 
 
@@ -350,7 +359,7 @@ mean(previsao == conjunto_teste$grave)
 
 
 # Modelo SVM
-modelo_svm <- svm(grave ~ distrito + natureza, data = conjunto_treino, kernel = "linear")
+modelo_svm <- svm(grave ~ distrito + natureza + cond_aderencia + sinais + tracado_1, data = conjunto_treino, kernel = "linear")
 
 #predict with test data
 previsao <- predict(modelo_svm, newdata = conjunto_teste, type = "link")
@@ -360,3 +369,6 @@ length(coef(modelo_svm))
 
 #accuracy of the prediction
 mean(previsao == conjunto_teste$grave)
+
+
+#0.9311828 vs 0.9333333
