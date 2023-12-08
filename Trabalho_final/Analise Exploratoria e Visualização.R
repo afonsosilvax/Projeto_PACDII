@@ -7,10 +7,7 @@ library(janitor)
 library(here)
 library(lubridate)
 library(ggplot2)
-library(lsr)
 library(tidyverse)
-library(caret)
-library(e1071)
 
 # Ler ficheiros
 acidentes_2010 <- read_excel("acidentes-2010.xlsx", sheet = 3, col_names = TRUE, na = "NÃO DEFINIDO"
@@ -39,8 +36,7 @@ acidentes <- rbind(acidentes_2010, acidentes_2011, acidentes_2012, acidentes_201
                    acidentes_2014, acidentes_2015, acidentes_2016, acidentes_2017, 
                    acidentes_2018, acidentes_2019)
 
-acidentes_samp <- read_excel("acidentes-sample.xlsx", sheet = 3, col_names = TRUE, na = "NÃO DEFINIDO"
-                        , .name_repair = make_clean_names)
+glimpse(acidentes)
 
 # Tratamento da coluna datahora
 acidentes$datahora <- as_datetime(acidentes$datahora)
@@ -54,8 +50,6 @@ glimpse(acidentes)
 
 # Estudo dos NA's
 summary(is.na(acidentes))
-summary(acidentes$sentidos)
-
 sum(is.na(acidentes))/(nrow(acidentes)*ncol(acidentes))
                        
 # Variáveis com alto teor em NA's
@@ -63,7 +57,7 @@ summary(acidentes$pov_proxima)
 summary(acidentes$nome_arruamento)
 summary(acidentes$km)
 summary(acidentes$sentidos)
-summary(acidentes$obras_arte) # túneis, pontes e estradas - substituir NA's por estradas
+summary(acidentes$obras_arte)
 summary(acidentes$sinais)
 
 #eliminação de na's de acordo com a nossa interpretação do manual de preenchimento
@@ -91,11 +85,20 @@ acidentes <- acidentes[-which(is.na(acidentes$tracado_2)),]
 acidentes <- acidentes[-which(is.na(acidentes$tracado_3)),]
 acidentes <- acidentes[-which(is.na(acidentes$tracado_4)),]
 acidentes <- acidentes[-which(is.na(acidentes$via_transito)),]
-acidentes <- acidentes %>% select(-latitude_gps, -longitude_gps)
+# TODO: tratar os 0's na coluna "cod_via"
+summary(is.na(acidentes))
 
 # Passar para factor as variáveis que são character
 acidentes <- acidentes %>% mutate_if(is.character, as.factor)
-summary(is.na(acidentes))
+acidentes$velocidade_local <- as.integer(acidentes$velocidade_local)
+acidentes$velocidade_local <- as.factor(acidentes$velocidade_local)
+acidentes$velocidade_geral <- as.integer(acidentes$velocidade_geral)
+acidentes$velocidade_geral <- as.factor(acidentes$velocidade_geral)
+
+acidentes$dia <- format(acidentes$datahora, "%d")
+acidentes$mes <- format(acidentes$datahora, "%m")
+acidentes$hora <- format(acidentes$datahora, "%H:%M:%S")
+
 glimpse(acidentes)
 
 # Visualização de outliers
@@ -116,11 +119,9 @@ barplot(prop.table(table(acidentes$caracteristicas_tecnicas1)), col="#14BFB8", m
 hist(table(acidentes$hora), col="#14BFB8", main="Hora")
 
 # Dataset com os acidentes e as respetivas datas
-data_acidentes <- acidentes %>% select(id_acidente, datahora, dia_da_semana)
+data_acidentes <- acidentes %>% select(id_acidente, datahora, dia_da_semana, mes, dia)
 data_acidentes$ano_mes_dia <- format(data_acidentes$datahora, "%Y-%m-%d")
 data_acidentes$ano <- format(data_acidentes$datahora, "%Y")
-data_acidentes$mes <- format(data_acidentes$datahora, "%m")
-data_acidentes$dia <- format(data_acidentes$datahora, "%d")
 
 # Gráfico de acidentes desde 2010 até 2019
 ggplot(data_acidentes, aes(x = as.Date(ano_mes_dia))) +
@@ -257,118 +258,3 @@ ggplot(acidentes_fev, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
   labs(title = "Evolução do Número de Acidentes em fevereiro", x = "Dia", y = "Número de Acidentes")
-
-# resolução problema 2
-hist(acidentes$num_feridos_ligeiros_a_30_dias)
-hist(acidentes$num_feridos_graves_a_30_dias)
-hist(acidentes$num_mortos_a_30_dias)
-
-# acidentes where num_mortos_a_30_dias > 0 or num_feridos_graves_a_30_dias > 2
-
-prob2 <- acidentes %>% 
-  mutate(grave = ifelse(num_mortos_a_30_dias > 0 | num_feridos_graves_a_30_dias > 0, 1, 0)) %>% 
-  select(-num_mortos_a_30_dias, -num_feridos_graves_a_30_dias, -num_feridos_ligeiros_a_30_dias)
-
-prob2 <- prob2 %>%
-  mutate(natureza = factor(ifelse(natureza=="Atropelamento com fuga" | natureza=="Atropelamento de animais" | natureza=="Atropelamento de peões", "Atropelamento", 
-                                  ifelse(natureza=="Colisão choque em cadeia" | natureza=="Colisão com fuga" | natureza=="Colisão com outras situações" | natureza=="Colisão com veiculo ou obstáculo na faixa de rodagem" | natureza=="Colisão frontal" | natureza=="Colisão lateral com outro veículo em movimento" | natureza=="Colisão traseira com outro veículo em movimento", "Colisão", "Despiste"))))
-
-# Vamos fazer uma amostra dos dados para poder fazer algoritmos com o mesmo
-set.seed(2023)
-prob2s <- createDataPartition(prob2$grave, p = 0.01, list = FALSE)
-amostra <- prob2[prob2s, ]
-
-amostra$grave <- as.factor(amostra$grave)
-
-prop.table(table(amostra$grave))
-xtabs(~grave + natureza, data = amostra)
-
-set.seed(2023)
-conjunto_indices <- sample(1:nrow(amostra), size = 0.7 * nrow(amostra))
-conjunto_treino <- amostra[conjunto_indices, ]
-conjunto_teste <- amostra[-conjunto_indices, ]
-
-prop.table(table(conjunto_treino$grave))
-prop.table(table(conjunto_teste$grave))
-
-#Analise de correlações
-cramersV(conjunto_treino$grave, conjunto_treino$distrito)
-cramersV(conjunto_treino$grave, conjunto_treino$entidades_fiscalizadoras)
-cramersV(conjunto_treino$grave, conjunto_treino$velocidade_geral)
-cramersV(conjunto_treino$grave, conjunto_treino$dia_da_semana)
-cramersV(conjunto_treino$grave, conjunto_treino$caracteristicas_tecnicas1)
-cramersV(conjunto_treino$grave, conjunto_treino$cond_aderencia)
-cramersV(conjunto_treino$grave, conjunto_treino$concelho)
-cramersV(conjunto_treino$grave, conjunto_treino$freguesia)
-cramersV(conjunto_treino$grave, conjunto_treino$pov_proxima)
-cramersV(conjunto_treino$grave, conjunto_treino$nome_arruamento)
-cramersV(conjunto_treino$grave, conjunto_treino$tipos_vias)
-cramersV(conjunto_treino$grave, conjunto_treino$cod_via)
-cramersV(conjunto_treino$grave, conjunto_treino$estado_conservacao)
-cramersV(conjunto_treino$grave, conjunto_treino$km)
-cramersV(conjunto_treino$grave, conjunto_treino$factores_atmosfericos)
-cramersV(conjunto_treino$grave, conjunto_treino$reg_circulacao1)
-cramersV(conjunto_treino$grave, conjunto_treino$interseccao_vias)
-cramersV(conjunto_treino$grave, conjunto_treino$localizacoes)
-cramersV(conjunto_treino$grave, conjunto_treino$luminosidade)
-cramersV(conjunto_treino$grave, conjunto_treino$marca_via)
-cramersV(conjunto_treino$grave, conjunto_treino$natureza)
-cramersV(conjunto_treino$grave, conjunto_treino$obras_arte)
-cramersV(conjunto_treino$grave, conjunto_treino$obstaculos)
-cramersV(conjunto_treino$grave, conjunto_treino$sentidos)
-cramersV(conjunto_treino$grave, conjunto_treino$sinais)
-cramersV(conjunto_treino$grave, conjunto_treino$tipo_piso)
-cramersV(conjunto_treino$grave, conjunto_treino$tracado_1)
-cramersV(conjunto_treino$grave, conjunto_treino$tracado_2)
-cramersV(conjunto_treino$grave, conjunto_treino$tracado_3)
-cramersV(conjunto_treino$grave, conjunto_treino$tracado_4)
-cramersV(conjunto_treino$grave, conjunto_treino$via_transito)
-cramersV(conjunto_treino$grave, conjunto_treino$velocidade_local)
-
-# Variáveis relevantes: freguesia, pov_proxima, nome_arruamento, km
-length(levels(amostra$freguesia))
-length(levels(amostra$pov_proxima))
-length(levels(amostra$nome_arruamento))
-length(levels(amostra$km))
-
-#analisar correlações entre variaveis de alta correlação, natureza, km, codvia, nome arruamento, pov_proxima, freguesia,, concelho, distrito, velocidade geral, velocidade local
-#dentro das variaveis de alta correlação que dizem respeito a localização escolhemos a com maior correlação pois elas sao correlacionadas entre si o mesmo para as velociades
-# algoritmo regressão logistica de forma naive
-
-modelo_logistico <- glm(grave ~ distrito + natureza + cond_aderencia, data = conjunto_treino, family = "binomial")
-summary(modelo_logistico)
-
-
-# previsão dos dados
-previsao <- predict(modelo_logistico, newdata = conjunto_teste, type = "response")
-previsao <- ifelse(previsao > 0.5, 1, 0)
-
-# number of coefficients in the model
-length(coef(modelo_logistico))
-
-#accuracy of the prediction
-mean(previsao == conjunto_teste$grave)
-#0.9172043
-#0.9290323 - 3 niveis na natureza
-
-
-
-
-
-
-
-
-# Modelo SVM
-modelo_svm <- svm(grave ~ distrito + natureza + cond_aderencia + sinais + tracado_1, data = conjunto_treino, kernel = "linear")
-
-#predict with test data
-previsao <- predict(modelo_svm, newdata = conjunto_teste, type = "link")
-
-# number of coefficients in the model
-length(coef(modelo_svm))
-
-#accuracy of the prediction
-mean(previsao == conjunto_teste$grave)
-
-
-#0.9311828 vs 0.9333333
