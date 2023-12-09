@@ -53,22 +53,21 @@ acidentes <- acidentes[-which(is.na(acidentes$tracado_2)),]
 acidentes <- acidentes[-which(is.na(acidentes$tracado_3)),]
 acidentes <- acidentes[-which(is.na(acidentes$tracado_4)),]
 acidentes <- acidentes[-which(is.na(acidentes$via_transito)),]
-# TODO: tratar os 0's na coluna "cod_via"
 summary(is.na(acidentes))
 
 # Tratamento de variáveis
-acidentes <- acidentes %>% mutate_if(is.character, as.factor)
 acidentes$velocidade_local <- as.integer(acidentes$velocidade_local)
 acidentes$velocidade_local <- as.factor(acidentes$velocidade_local)
 acidentes$velocidade_geral <- as.integer(acidentes$velocidade_geral)
 acidentes$velocidade_geral <- as.factor(acidentes$velocidade_geral)
+
+acidentes <- acidentes %>% mutate_if(is.character, as.factor)
 
 acidentes$dia <- format(acidentes$datahora, "%d")
 acidentes$mes <- format(acidentes$datahora, "%m")
 acidentes$hora <- format(acidentes$datahora, "%H:%M:%S")
 
 glimpse(acidentes)
-summary(acidentes$hora)
 
 
 # resolução problema 2
@@ -91,15 +90,15 @@ prob2$gravidade <- as.factor(prob2$gravidade)
 glimpse(prob2)
 
 # Vamos fazer uma amostra dos dados para poder fazer algoritmos com o mesmo
-set.seed(2023)
-prob2s <- sample(1:nrow(prob2), nrow(prob2) * 0.25)
+set.seed(2022)
+prob2s <- sample(1:nrow(prob2), nrow(prob2) * 0.70)
 amostra <- prob2[prob2s, ]
 
 prop.table(table(amostra$gravidade))
 xtabs(~gravidade + natureza, data = amostra)
 
-set.seed(2023)
-conjunto_indices <- sample(1:nrow(amostra), size = 0.7 * nrow(amostra))
+set.seed(2022)
+conjunto_indices <- sample(1:nrow(amostra), size = 0.90 * nrow(amostra))
 conjunto_treino <- amostra[conjunto_indices, ]
 conjunto_teste <- amostra[-conjunto_indices, ]
 
@@ -122,7 +121,7 @@ cramersV(train_down$gravidade, train_down$velocidade_local)
 cramersV(train_down$gravidade, train_down$velocidade_geral)
 cramersV(train_down$gravidade, train_down$dia_da_semana)
 cramersV(train_down$gravidade, train_down$caracteristicas_tecnicas1)
-#cramersV(train_down$gravidade, train_down$cond_aderencia)
+cramersV(train_down$gravidade, train_down$cond_aderencia)
 cramersV(train_down$gravidade, train_down$distrito)
 cramersV(train_down$gravidade, train_down$concelho)
 cramersV(train_down$gravidade, train_down$freguesia)
@@ -130,19 +129,19 @@ cramersV(train_down$gravidade, train_down$pov_proxima)
 cramersV(train_down$gravidade, train_down$nome_arruamento)
 cramersV(train_down$gravidade, train_down$tipos_vias)
 cramersV(train_down$gravidade, train_down$cod_via)
-#cramersV(train_down$gravidade, train_down$estado_conservacao)
+cramersV(train_down$gravidade, train_down$estado_conservacao)
 cramersV(train_down$gravidade, train_down$km)
-#cramersV(train_down$gravidade, train_down$factores_atmosfericos)
+cramersV(train_down$gravidade, train_down$factores_atmosfericos)
 cramersV(train_down$gravidade, train_down$reg_circulacao1)
-#cramersV(train_down$gravidade, train_down$interseccao_vias)
+cramersV(train_down$gravidade, train_down$interseccao_vias)
 cramersV(train_down$gravidade, train_down$localizacoes)
-#cramersV(train_down$gravidade, train_down$luminosidade)
+cramersV(train_down$gravidade, train_down$luminosidade)
 cramersV(train_down$gravidade, train_down$marca_via)
 cramersV(train_down$gravidade, train_down$natureza)
 cramersV(train_down$gravidade, train_down$obras_arte)
 cramersV(train_down$gravidade, train_down$obstaculos)
 cramersV(train_down$gravidade, train_down$sentidos)
-#cramersV(train_down$gravidade, train_down$sinais)
+cramersV(train_down$gravidade, train_down$sinais)
 cramersV(train_down$gravidade, train_down$sinais_luminosos)
 cramersV(train_down$gravidade, train_down$tipo_piso)
 cramersV(train_down$gravidade, train_down$tracado_1)
@@ -161,7 +160,7 @@ length(levels(amostra$km))
 #dentro das variaveis de alta correlação que dizem respeito a localização escolhemos a com maior correlação pois elas sao correlacionadas entre si o mesmo para as velociades
 # algoritmo regressão logistica de forma naive
 
-modelo_logistico <- glm(relevel(gravidade, ref="Nao Grave") ~ mes + hora + velocidade_geral + distrito + localizacoes + luminosidade + natureza, data = train_down, family = "binomial")
+modelo_logistico <- glm(relevel(gravidade, ref="Nao Grave") ~ mes + distrito + localizacoes + luminosidade + natureza, data = train_down, family = "binomial")
 summary(modelo_logistico)
 length(coef(modelo_logistico))
 
@@ -171,17 +170,20 @@ previsao <- data.frame(cbind(probabilidade = round(previsao, 3), previsao = ifel
 
 (matriz_confusao <- table(conjunto_teste$gravidade, previsao$previsao))
 
+(sensibilidade <- matriz_confusao[1, 1]/(matriz_confusao[1, 1] + matriz_confusao[1, 2]))
+(especificidade <- matriz_confusao[2, 2]/(matriz_confusao[2, 2] + matriz_confusao[2, 1]))
+(precisao <- matriz_confusao[1, 1]/(matriz_confusao[1, 1] + matriz_confusao[2, 1]))
+
 #accuracy of the prediction
-mean(previsao$previsao == conjunto_teste$gravidade)
-#0.9172043
-#0.9290323 - 3 niveis na natureza
+(accuracy <- mean(previsao$previsao == conjunto_teste$gravidade))
 
 prop.table(table(conjunto_teste$gravidade))
 
 
 
 # Modelo SVM
-modelo_svm <- svm(gravidade ~ mes + hora + velocidade_geral + distrito + localizacoes + luminosidade + natureza, data = train_down, kernel = "linear")
+modelo_svm <- svm(gravidade ~ mes + distrito + localizacoes + luminosidade + natureza, data = train_down, kernel = "linear")
+summary(modelo_svm)
 
 #predict with test data
 previsao <- data.frame(previsao = predict(modelo_svm, newdata = conjunto_teste, type = "link"))
@@ -190,32 +192,52 @@ previsao <- data.frame(previsao = predict(modelo_svm, newdata = conjunto_teste, 
 length(coef(modelo_svm))
 
 (matriz_confusao <- table(conjunto_teste$gravidade, previsao$previsao))
+# precison: 0.625
+
+(sensibilidade <- matriz_confusao[1, 1]/(matriz_confusao[1, 1] + matriz_confusao[1, 2]))
+(especificidade <- matriz_confusao[2, 2]/(matriz_confusao[2, 2] + matriz_confusao[2, 1]))
+(precisao <- matriz_confusao[1, 1]/(matriz_confusao[1, 1] + matriz_confusao[2, 1]))
 
 #accuracy of the prediction
-mean(previsao$previsao == conjunto_teste$gravidade)
-
+(accuracy <- mean(previsao$previsao == conjunto_teste$gravidade))
 
 # Modelo Random Forest
-modelo_rf <- randomForest(gravidade ~ mes + hora + velocidade_geral + distrito + localizacoes + luminosidade + natureza, data = train_down, ntree = 1000, importance = TRUE)
+set.seed(2022)
+modelo_rf <- randomForest(gravidade ~ mes + hora + distrito + localizacoes + luminosidade + natureza, data = train_down, ntree = 1000, importance = TRUE)
+summary(modelo_rf)
 
 # previsão dos dados
 previsao <- predict(modelo_rf, conjunto_teste, type="response")
 previsao <- data.frame(previsao = previsao, classe = ifelse(conjunto_teste$gravidade==1, "Grave", "Nao Grave"))
 
-
 (matriz_confusao <- table(conjunto_teste$gravidade, previsao$previsao))
+
+(sensibilidade <- matriz_confusao[1, 1]/(matriz_confusao[1, 1] + matriz_confusao[1, 2]))
+(especificidade <- matriz_confusao[2, 2]/(matriz_confusao[2, 2] + matriz_confusao[2, 1]))
+(precisao <- matriz_confusao[1, 1]/(matriz_confusao[1, 1] + matriz_confusao[2, 1]))
+
+#accuracy of the prediction
+(accuracy <- mean(previsao$previsao == conjunto_teste$gravidade))
 
 #accuracy of the prediction
 mean(previsao$previsao == conjunto_teste$gravidade)
-
+# 0.6861213
 
 # Modelo Gradient Boosting
-modelo_gb <- gbm(ifelse(gravidade=="Nao Grave", 0, 1) ~ mes + hora + velocidade_geral + distrito + localizacoes + luminosidade + natureza, data = train_down, distribution = "bernoulli", n.trees = 1000, interaction.depth = 4, shrinkage = 0.01, cv.folds = 5, verbose = TRUE)
+set.seed(2022)
+modelo_gb <- gbm(ifelse(gravidade=="Nao Grave", 0, 1) ~ mes + hora + velocidade_geral + distrito + localizacoes + luminosidade + natureza, data = train_down, distribution = "bernoulli", n.trees = 500, interaction.depth = 4, shrinkage = 0.01, cv.folds = 5, verbose = TRUE)
+summary(modelo_gb)
 
 previsao <- predict(modelo_gb, conjunto_teste, type="response")
 previsao <- data.frame(cbind(probabilidade = round(previsao, 3), previsao = ifelse(previsao > 0.5, "Grave", "Nao Grave"), classe = ifelse(conjunto_teste$gravidade==1, "Grave", "Nao Grave")))
 
 (matriz_confusao <- table(conjunto_teste$gravidade, previsao$previsao))
+# precison: 0.6130952
+
+(sensibilidade <- matriz_confusao[1, 1]/(matriz_confusao[1, 1] + matriz_confusao[1, 2]))
+(especificidade <- matriz_confusao[2, 2]/(matriz_confusao[2, 2] + matriz_confusao[2, 1]))
+(precisao <- matriz_confusao[1, 1]/(matriz_confusao[1, 1] + matriz_confusao[2, 1]))
 
 #accuracy of the prediction
 mean(previsao$previsao == conjunto_teste$gravidade)
+#0.6360294

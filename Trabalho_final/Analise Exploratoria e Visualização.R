@@ -85,7 +85,6 @@ acidentes <- acidentes[-which(is.na(acidentes$tracado_2)),]
 acidentes <- acidentes[-which(is.na(acidentes$tracado_3)),]
 acidentes <- acidentes[-which(is.na(acidentes$tracado_4)),]
 acidentes <- acidentes[-which(is.na(acidentes$via_transito)),]
-# TODO: tratar os 0's na coluna "cod_via"
 summary(is.na(acidentes))
 
 # Passar para factor as variáveis que são character
@@ -139,7 +138,9 @@ nr_acidentes$numero_acidentes <- nr_acidentes$numero_acidentes / 10
 ggplot(nr_acidentes, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
-  labs(title = "Evolução do Número de Acidentes durante um ano", x = "Data", y = "Número de Acidentes")
+  labs(title = "Evolução do Número de Acidentes durante um ano", x = "Data", y = "Número de Acidentes") + 
+  scale_x_discrete(breaks = c("01-01", "02-01", "03-01", "04-01", "05-01", "06-01", "07-01", "08-01", "09-01", "10-01", "11-01", "12-01"),
+                   labels = c("Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"))
 
 nr_acidentes_mes <- data_acidentes %>% group_by(mes) %>% summarise(numero_acidentes=n()/10)
 nr_acidentes_mes <- nr_acidentes_mes %>% rows_update(nr_acidentes_mes %>% filter(mes %in% c("01", "03", "05", "07", "08", "10", "12")) %>% 
@@ -153,7 +154,9 @@ nr_acidentes_mes <- nr_acidentes_mes %>% rows_update(nr_acidentes_mes %>% filter
 ggplot(nr_acidentes_mes, aes(x = mes, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
-  labs(title = "Evolução do Número de Acidentes médio ao longo dos meses", x = "Mês", y = "Número de Acidentes")
+  labs(title = "Evolução do Número de Acidentes médio ao longo dos meses", x = "Mês", y = "Número de Acidentes") + 
+  scale_x_discrete(breaks = c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"),
+                   labels = c("Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"))
 
 mes_geral <- data_acidentes %>% group_by(dia) %>% summarise(numero_acidentes=n()/120)
 mes_geral[31, 2] = mes_geral[31, 2] * 12 / 7
@@ -165,7 +168,10 @@ mean(mes_geral$numero_acidentes)
 ggplot(mes_geral, aes(x = dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
-  labs(title = "Evolução do Número de Acidentes ao longo de um mês", x = "Dia", y = "Número de Acidentes")
+  labs(title = "Evolução do Número de Acidentes ao longo de um mês", x = "Dia", y = "Número de Acidentes") + 
+  scale_x_discrete(breaks = c("01", "05", "10", "15", "20", "25", "30"),
+                   labels = c("1", "5", "10", "15", "20", "25", "30"))
+
 
 d = 0
 s = 0
@@ -200,7 +206,11 @@ acidentes_natal <- nr_acidentes %>% filter(mes_dia == "12-10" | mes_dia == "12-1
 ggplot(acidentes_natal, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
-  labs(title = "Evolução do Número de Acidentes em periodo natalício", x = "Dia", y = "Número de Acidentes")
+  labs(title = "Evolução do Número de Acidentes em periodo natalício", x = "Dia", y = "Número de Acidentes") + 
+  # show only the day in x axis
+  scale_x_discrete(breaks = c("12-10", "12-12", "12-14", "12-16", "12-18", "12-20", "12-22", "12-24", "12-25", "12-26", "12-27"),
+                   labels = c("10", "12", "14", "16", "18", "20", "22", "24", "25 (Natal)", "26", "27"))
+
 
 # Media de acidentes no Natal
 acidentes_natal[16, 2]
@@ -215,7 +225,10 @@ acidentes_dez <- nr_acidentes %>% filter(grepl("12-", mes_dia))
 ggplot(acidentes_dez, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
-  labs(title = "Evolução do Número de Acidentes em dezembro", x = "Dia", y = "Número de Acidentes")
+  labs(title = "Evolução do Número de Acidentes em dezembro", x = "Dia", y = "Número de Acidentes") + 
+  scale_x_discrete(breaks = c("12-01", "12-05", "12-10", "12-15", "12-20", "12-25", "12-30"),
+                   labels = c("1", "5", "10", "15", "20", "25 (Natal)", "30"))
+
 
 # Acidentes no carnaval
 dia_carnaval <- c(as_date("2010-02-16"), as_date("2011-03-08"), as_date("2012-02-21"), 
@@ -246,7 +259,13 @@ acidentes_carnaval <- data_acidentes %>% filter(between(as_date(ano_mes_dia), an
 ggplot(acidentes_carnaval, aes(x = ano_mes_dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
-  labs(title = "Evolução do Número de Acidentes em vários periodos de carnaval 2010-2019", x = "Dia", y = "Número de Acidentes")
+  labs(title = "Evolução do Número de Acidentes em vários periodos de carnaval 2010-2019", x = "Dia", y = "Número de Acidentes") + 
+  scale_x_discrete(labels = c("2010", "", "", "", "", "", "", "", "", "2011", "", "", "", "", "", "", "", "", 
+                              "2012", "", "", "", "", "", "", "", "", "2013", "", "", "", "", "", "", "", "",
+                              "2014", "", "", "", "", "", "", "", "", "2015", "", "", "", "", "", "", "", "",
+                              "2016", "", "", "", "", "", "", "", "", "2017", "", "", "", "", "", "", "", "",
+                              "2017", "", "", "", "", "", "", "", "", "2018", "", "", "", "", "", "", "", "",
+                              "2019", "", "", "", "", "", "", "", ""))
 
 acidentes_carnaval_torres <- data_acidentes %>% filter(between(as_date(ano_mes_dia), antes_c[1], depois_c[1]) | 
                                                          between(as_date(ano_mes_dia), antes_c[2], depois_c[2]) | 
@@ -266,7 +285,13 @@ acidentes_carnaval_torres <- data_acidentes %>% filter(between(as_date(ano_mes_d
 ggplot(acidentes_carnaval_torres, aes(x = ano_mes_dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
-  labs(title = "Evolução do Número de Acidentes em vários periodos de carnaval 2010-2019 em Torres", x = "Dia", y = "Número de Acidentes")
+  labs(title = "Evolução do Número de Acidentes em vários periodos de carnaval 2010-2019 em Torres Vedras", x = "Dia", y = "Número de Acidentes") +
+  scale_x_discrete(labels = c("2010", "", "", "", "", "", "", "", "", "2011", "", "", "", "", "", "", "", "", 
+                              "2012", "", "", "", "", "", "", "", "", "2013", "", "", "", "", "", "", "", "",
+                              "2014", "", "", "", "", "", "", "", "", "2015", "", "", "", "", "", "", "", "",
+                              "2016", "", "", "", "", "", "", "", "", "2017", "", "", "", "", "", "", "", "",
+                              "2017", "", "", "", "", "", "", "", "", "2018", "", "", "", "", "", "", "", "",
+                              "2019", "", "", "", "", "", "", "", ""))
 
 acidentes_carnaval <- acidentes_carnaval %>%
   mutate(posicao = rep(1:9, length.out = n())) %>%
@@ -305,4 +330,6 @@ acidentes_fev <- nr_acidentes %>% filter(grepl("02-", mes_dia))
 ggplot(acidentes_fev, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
-  labs(title = "Evolução do Número de Acidentes em fevereiro", x = "Dia", y = "Número de Acidentes")
+  labs(title = "Evolução do Número de Acidentes em fevereiro", x = "Dia", y = "Número de Acidentes") + 
+  scale_x_discrete(breaks = c("02-01", "02-05", "02-10", "02-15", "02-20", "02-25", "02-29"),
+                   labels = c("1", "5", "10", "15", "20", "25", "29"))
