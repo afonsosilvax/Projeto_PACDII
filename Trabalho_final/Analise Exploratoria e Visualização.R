@@ -119,7 +119,7 @@ barplot(prop.table(table(acidentes$caracteristicas_tecnicas1)), col="#14BFB8", m
 hist(table(acidentes$hora), col="#14BFB8", main="Hora")
 
 # Dataset com os acidentes e as respetivas datas
-data_acidentes <- acidentes %>% select(id_acidente, datahora, dia_da_semana, mes, dia)
+data_acidentes <- acidentes %>% select(id_acidente, datahora, dia_da_semana, mes, dia, concelho)
 data_acidentes$ano_mes_dia <- format(data_acidentes$datahora, "%Y-%m-%d")
 data_acidentes$ano <- format(data_acidentes$datahora, "%Y")
 
@@ -202,6 +202,13 @@ ggplot(acidentes_natal, aes(x = mes_dia, y = numero_acidentes, group = 1)) +
   geom_point(color = "red") +
   labs(title = "Evolução do Número de Acidentes em periodo natalício", x = "Dia", y = "Número de Acidentes")
 
+# Media de acidentes no Natal
+acidentes_natal[16, 2]
+
+# Media de acidentes no periodo de Natal
+sum(acidentes_natal$numero_acidentes)/nrow(acidentes_natal)
+
+
 # Acidentes em dezembro
 acidentes_dez <- nr_acidentes %>% filter(grepl("12-", mes_dia))
 
@@ -241,6 +248,26 @@ ggplot(acidentes_carnaval, aes(x = ano_mes_dia, y = numero_acidentes, group = 1)
   geom_point(color = "red") +
   labs(title = "Evolução do Número de Acidentes em vários periodos de carnaval 2010-2019", x = "Dia", y = "Número de Acidentes")
 
+acidentes_carnaval_torres <- data_acidentes %>% filter(between(as_date(ano_mes_dia), antes_c[1], depois_c[1]) | 
+                                                         between(as_date(ano_mes_dia), antes_c[2], depois_c[2]) | 
+                                                         between(as_date(ano_mes_dia), antes_c[3], depois_c[3]) | 
+                                                         between(as_date(ano_mes_dia), antes_c[4], depois_c[4]) | 
+                                                         between(as_date(ano_mes_dia), antes_c[5], depois_c[5]) | 
+                                                         between(as_date(ano_mes_dia), antes_c[6], depois_c[6]) | 
+                                                         between(as_date(ano_mes_dia), antes_c[7], depois_c[7]) | 
+                                                         between(as_date(ano_mes_dia), antes_c[8], depois_c[8]) | 
+                                                         between(as_date(ano_mes_dia), antes_c[9], depois_c[9]) | 
+                                                         between(as_date(ano_mes_dia), antes_c[10], depois_c[10])) %>%
+  group_by(ano_mes_dia) %>% 
+  summarize(numero_acidentes = sum(ifelse(concelho == "Torres Vedras", 1, 0)))
+
+  
+  
+ggplot(acidentes_carnaval_torres, aes(x = ano_mes_dia, y = numero_acidentes, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes em vários periodos de carnaval 2010-2019 em Torres", x = "Dia", y = "Número de Acidentes")
+
 acidentes_carnaval <- acidentes_carnaval %>%
   mutate(posicao = rep(1:9, length.out = n())) %>%
   group_by(posicao) %>% summarise(numero_acidentes = sum(numero_acidentes)/10)
@@ -250,6 +277,27 @@ ggplot(acidentes_carnaval, aes(x = posicao, y = numero_acidentes, group = 1)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
   labs(title = "Evolução do Número de Acidentes no periodo de carnaval", x = "Dia", y = "Número de Acidentes")
+
+acidentes_carnaval_torres <- acidentes_carnaval_torres %>%
+  mutate(posicao = rep(1:9, length.out = n())) %>%
+  group_by(posicao) %>% summarise(numero_acidentes = sum(numero_acidentes)/10)
+
+ggplot(acidentes_carnaval_torres, aes(x = posicao, y = numero_acidentes, group = 1)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolução do Número de Acidentes no periodo de carnaval em Torres Vedras", x = "Dia", y = "Número de Acidentes")
+
+# Media de acidentes no Carnaval
+acidentes_carnaval[6, 2]
+
+# Media de acidentes no periodo de Carnaval
+sum(acidentes_carnaval$numero_acidentes)/nrow(acidentes_carnaval)
+
+# Media de acidentes no Carnaval em Torres Vedras
+acidentes_carnaval_torres[6, 2]
+
+# Media de acidentes no periodo de Carnaval em Torres Vedras
+sum(acidentes_carnaval_torres$numero_acidentes)/nrow(acidentes_carnaval_torres)
 
 # Acidentes em fevereiro
 acidentes_fev <- nr_acidentes %>% filter(grepl("02-", mes_dia))
