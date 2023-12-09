@@ -15,7 +15,7 @@ library(gbm)
 
 # Leitura dos dados
 acidentes <- read_excel("acidentes-sample.xlsx", sheet = 3, col_names = TRUE, na = "NÃO DEFINIDO"
-                             , .name_repair = make_clean_names)
+                        , .name_repair = make_clean_names)
 
 # Nota: Estamos a assumir que esta amostra é representativa da população.
 
